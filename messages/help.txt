@@ -1,0 +1,26 @@
+************************************************************
+*                                                          *
+*         SSS  M M  OOO  OOO  SSS  H H    J  SSS           *
+*          S   MMM  O O  O O   S   HHH    J   S            *
+*           S  M M  O O  O O    S  H H  J J    S           *
+*         SSS  M M  OOO  OOO  SSS  H H  JJJ  SSS           *
+*                                                          *
+* Smooshjs is for compiling javascript commonjs modules    *
+* into a single file that is wrapped in either an AMD or   *
+* CommonJS structure.  It is intended for projects that    *
+* need to output a single file with a single entry point.  *
+*                                                          *
+*                                                          *
+*  USAGE: node smooshjs entryPoint.js                      *
+*                   -OR-                                   *
+*         node smooshjs -amd entryPoint.js                 *
+*                   -OR-                                   *
+*         node smooshjs -cjs entryPoint.js                 *
+*                                                          *
+*                                                          *
+*  -amd         will wrap all the required modules in an   *
+*               AMD-formatted define function              *
+*                                                          *
+*  -cjs         will wrap all the required modules in a    *
+*               CommonJS-formatted module.exports function *
+************************************************************

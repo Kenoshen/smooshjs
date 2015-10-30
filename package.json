@@ -1,0 +1,29 @@
+{
+  "name": "smooshjs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node smooshjs test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kenoshen/smooshjs"
+  },
+  "keywords": [
+    "npm",
+    "javascript",
+    "compile",
+    "amd",
+    "commonjs"
+  ],
+  "author": "Michael Wingfield",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Kenoshen/smooshjs/issues"
+  },
+  "homepage": "https://github.com/Kenoshen/smooshjs",
+  "dependencies": {
+    "fs": "0.0.2"
+  }
+}
