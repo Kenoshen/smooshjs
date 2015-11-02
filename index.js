@@ -3,7 +3,7 @@
 var fs = require("fs");
 var path = require("path");
 
-function displayMessage(name){ console.log(fs.readFileSync(__dirname + "/messages/" + name + ".txt", "utf8")); }
+function displayMessage(name){ console.log(fs.readFileSync(__dirname + "/snippets/" + name + ".txt", "utf8")); }
 
 var helpTag = false;
 var amdTag = false;
@@ -92,14 +92,13 @@ if (testTag){
     process.exit(0);
 }
 
-// TODO: write dependency tree builder
 var pie = {};
 function recurseForDependencies(fileLocation){
     var resolvedFileLocation = path.resolve(fileLocation);
     if (pie.hasOwnProperty(resolvedFileLocation)){
         return;
     }
-    console.log("Find dependencies in " + resolvedFileLocation);
+    //console.log("Find dependencies in " + resolvedFileLocation);
     var piece = {
         id: resolvedFileLocation,
         src: fs.readFileSync(resolvedFileLocation, "utf8"),
@@ -109,19 +108,28 @@ function recurseForDependencies(fileLocation){
     pie[resolvedFileLocation] = piece;
 
     var requireRegex = /require\("(.*)"\)/g;
-    var match;
-    while (match = requireRegex.exec(piece.src)) {
-        var m = path.resolve(piece.info.dir + "/" + match[1]);
+    piece.src = piece.src.replace(requireRegex, function(p1, p2){
+        var m = path.resolve(piece.info.dir + "/" + p2);
         if (piece.dependencies.indexOf(m) < 0) piece.dependencies.push(m);
-    }
+        return "require(\"" + m + "\")";
+    });
 
     piece.dependencies.forEach(function(dependency){
         recurseForDependencies(dependency);
     });
 }
 recurseForDependencies(entryPoint);
-// TODO: write wrapper functions for amd and commonjs
 
-console.log(JSON.stringify(pie, undefined, 4));
-// TODO: figure out how to handle local vs 3rd party dependencies
+var cjsTemplate = fs.readFileSync(__dirname + "/snippets/cjs.js", "utf8");
+var cjsModuleTemplate = fs.readFileSync(__dirname + "/snippets/cjs.module.js", "utf8");
+var entryPointId = path.resolve(entryPoint);
+var sourceCompiled = "";
+for (var id in pie){
+    sourceCompiled += cjsModuleTemplate.replace("<%id>", id).replace("<%src>", pie[id].src);
+}
+var finishedProduct = cjsTemplate.replace("<%source>", sourceCompiled).replace("<%entryPoint>", entryPointId);
 
+fs.writeFileSync(output, finishedProduct, "utf8");
+console.log("Successfully wrote to file: " + output);
+
+process.exit(0);

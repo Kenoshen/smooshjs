@@ -7,4 +7,4 @@ module.exports = function(){
         dep1: dependency1,
         dep2: dependency2
     };
-};
+}();
