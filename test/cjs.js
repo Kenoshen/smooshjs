@@ -2,10 +2,12 @@ var shell = require("shelljs");
 var chai = require("chai");
 
 describe("CJS", function(){
-   it.only("should parse through the cjs-based file and find all the correct dependencies", function(){
-       //shell.exec("smoosh -cjs test/resources/cjs.entrypoint.js test/output/");
-       shell.exec("smoosh -cjs test/resources/cjs.entrypoint.js test/output/");
-       var product = require("./output/cjs.entrypoint.js")();
+   it("should parse through the cjs-based file and find all the correct dependencies", function(){
+       shell.exec("rm -r test/output/*");
+       var output = shell.exec("smoosh -cjs test/resources/cjs.entrypoint.js test/output/");
+       chai.expect(output.code).to.equal(0);
+
+       var product = require("./output/cjs.entrypoint.js");
        //var product = require("./output/test.js");
        console.log(JSON.stringify(product));
 

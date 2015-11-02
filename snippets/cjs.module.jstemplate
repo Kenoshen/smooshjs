@@ -3,7 +3,9 @@
     var module = {exports: {}};
     var hasBeenRun = false;
     var f = function(module, exports){
-        <%src>
+
+<%src>
+
     };
     return {
         get: function(){

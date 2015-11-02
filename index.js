@@ -46,9 +46,6 @@ if (!amdTag && !cjsTag){
     console.log("must provide at least one of the output tags (-amd  OR  -cjs)");
     process.exit(1);
 }
-if (amdTag && cjsTag){
-    // TODO: figure out what to do when they want both
-}
 
 // TODO: check if entryPoint file exists
 var entryPointStat;
@@ -87,6 +84,17 @@ try {
     // do nothing because the file doesn't exist yet
 }
 
+if (amdTag && cjsTag){
+    var noJs = output.split(".js")[0];
+    amdTag = noJs + ".amd.js";
+    cjsTag = noJs + ".cjs.js";
+    console.log("Both -amd and -cjs tags were provided, output will be sent to: " + amdTag + " and " + cjsTag);
+} else if (amdTag){
+    amdTag = output
+} else if (cjsTag){
+    cjsTag = output
+}
+
 if (testTag){
     console.log("test tag was found, exiting now");
     process.exit(0);
@@ -94,42 +102,51 @@ if (testTag){
 
 var pie = {};
 function recurseForDependencies(fileLocation){
-    var resolvedFileLocation = path.resolve(fileLocation);
-    if (pie.hasOwnProperty(resolvedFileLocation)){
-        return;
+    try {
+        var resolvedFileLocation = path.resolve(fileLocation);
+        if (pie.hasOwnProperty(resolvedFileLocation)) {
+            return;
+        }
+        //console.log("Find dependencies in " + resolvedFileLocation);
+        var piece = {
+            id: resolvedFileLocation,
+            src: fs.readFileSync(resolvedFileLocation, "utf8"),
+            info: path.parse(resolvedFileLocation),
+            dependencies: []
+        };
+        pie[resolvedFileLocation] = piece;
+
+        var requireRegex = /require\("(.*)"\)/g;
+        piece.src = piece.src.replace(requireRegex, function (p1, p2) {
+            var m = path.resolve(piece.info.dir + "/" + p2);
+            if (piece.dependencies.indexOf(m) < 0) piece.dependencies.push(m);
+            return "require(\"" + m + "\")";
+        });
+
+        piece.dependencies.forEach(function (dependency) {
+            recurseForDependencies(dependency);
+        });
+    }catch (e){
+        //console.log("Error during dependency search: " + e);
     }
-    //console.log("Find dependencies in " + resolvedFileLocation);
-    var piece = {
-        id: resolvedFileLocation,
-        src: fs.readFileSync(resolvedFileLocation, "utf8"),
-        info: path.parse(resolvedFileLocation),
-        dependencies: []
-    };
-    pie[resolvedFileLocation] = piece;
-
-    var requireRegex = /require\("(.*)"\)/g;
-    piece.src = piece.src.replace(requireRegex, function(p1, p2){
-        var m = path.resolve(piece.info.dir + "/" + p2);
-        if (piece.dependencies.indexOf(m) < 0) piece.dependencies.push(m);
-        return "require(\"" + m + "\")";
-    });
-
-    piece.dependencies.forEach(function(dependency){
-        recurseForDependencies(dependency);
-    });
 }
 recurseForDependencies(entryPoint);
 
-var cjsTemplate = fs.readFileSync(__dirname + "/snippets/cjs.js", "utf8");
-var cjsModuleTemplate = fs.readFileSync(__dirname + "/snippets/cjs.module.js", "utf8");
+var cjsModuleTemplate = fs.readFileSync(__dirname + "/snippets/cjs.module.jstemplate", "utf8");
 var entryPointId = path.resolve(entryPoint);
 var sourceCompiled = "";
 for (var id in pie){
     sourceCompiled += cjsModuleTemplate.replace("<%id>", id).replace("<%src>", pie[id].src);
 }
-var finishedProduct = cjsTemplate.replace("<%source>", sourceCompiled).replace("<%entryPoint>", entryPointId);
-
-fs.writeFileSync(output, finishedProduct, "utf8");
-console.log("Successfully wrote to file: " + output);
+if (cjsTag){
+    var cjsTemplate = fs.readFileSync(__dirname + "/snippets/cjs.jstemplate", "utf8");
+    fs.writeFileSync(cjsTag, cjsTemplate.replace("<%source>", sourceCompiled).replace("<%entryPoint>", entryPointId), "utf8");
+    console.log("Successfully wrote to file: " + cjsTag);
+}
+if (amdTag){
+    var amdTemplate = fs.readFileSync(__dirname + "/snippets/amd.jstemplate", "utf8");
+    fs.writeFileSync(amdTag, amdTemplate.replace("<%source>", sourceCompiled).replace("<%entryPoint>", entryPointId), "utf8");
+    console.log("Successfully wrote to file: " + amdTag);
+}
 
 process.exit(0);

@@ -1,3 +1,9 @@
+
+// var dep = require("dependencyInAComment");
+/**
+ * var dep = require("dependencyInAMultiLineComment");
+ */
+
 module.exports = function(){
     dependency1 = require("cjs.dependency1.js");
     dependency2 = require("cjs.dependency2.js");
