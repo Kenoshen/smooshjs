@@ -91,7 +91,37 @@ if (testTag){
     console.log("test tag was found, exiting now");
     process.exit(0);
 }
+
 // TODO: write dependency tree builder
+var pie = {};
+function recurseForDependencies(fileLocation){
+    var resolvedFileLocation = path.resolve(fileLocation);
+    if (pie.hasOwnProperty(resolvedFileLocation)){
+        return;
+    }
+    console.log("Find dependencies in " + resolvedFileLocation);
+    var piece = {
+        id: resolvedFileLocation,
+        src: fs.readFileSync(resolvedFileLocation, "utf8"),
+        info: path.parse(resolvedFileLocation),
+        dependencies: []
+    };
+    pie[resolvedFileLocation] = piece;
+
+    var requireRegex = /require\("(.*)"\)/g;
+    var match;
+    while (match = requireRegex.exec(piece.src)) {
+        var m = path.resolve(piece.info.dir + "/" + match[1]);
+        if (piece.dependencies.indexOf(m) < 0) piece.dependencies.push(m);
+    }
+
+    piece.dependencies.forEach(function(dependency){
+        recurseForDependencies(dependency);
+    });
+}
+recurseForDependencies(entryPoint);
 // TODO: write wrapper functions for amd and commonjs
+
+console.log(JSON.stringify(pie, undefined, 4));
 // TODO: figure out how to handle local vs 3rd party dependencies
 

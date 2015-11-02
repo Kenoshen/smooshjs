@@ -4,7 +4,7 @@ var chai = require("chai");
 describe("CLI", function(){
     describe("Arguments", function(){
         it("should fail when no arguments are provided", function(){
-            var ret = shell.exec("smoosh")
+            var ret = shell.exec("smoosh");
             chai.expect(ret.code).to.equal(1);
         });
 
