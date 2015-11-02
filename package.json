@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node smooshjs test.js"
+    "test": "node mocha"
   },
   "repository": {
     "type": "git",
@@ -25,5 +25,13 @@
   "homepage": "https://github.com/Kenoshen/smooshjs",
   "dependencies": {
     "fs": "0.0.2"
+  },
+  "bin": {
+    "smoosh": "index.js"
+  },
+  "preferGlobal": true,
+  "devDependencies": {
+    "path": "^0.12.7",
+    "shelljs": "^0.5.3"
   }
 }
