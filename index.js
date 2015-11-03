@@ -38,12 +38,12 @@ if (!entryPoint){
     process.exit(1);
 }
 if (entryPoint.indexOf(".js") < 0){
-    console.log("entry point must be a javascript file (end in .js)");
+    console.error("entry point must be a javascript file (end in .js)");
     process.exit(1);
 }
 
 if (!amdTag && !cjsTag){
-    console.log("must provide at least one of the output tags (-amd  OR  -cjs)");
+    console.error("must provide at least one of the output tags (-amd  OR  -cjs)");
     process.exit(1);
 }
 
@@ -52,13 +52,13 @@ var entryPointStat;
 try {
     entryPointStat = fs.statSync(entryPoint);
 } catch (e){
-    console.log("file at " + entryPoint + " does not exist");
+    console.error("file at " + entryPoint + " does not exist");
     process.exit(1);
 }
 var entryPointPathParsed = path.parse(entryPoint);
 
 if (entryPointStat.isDirectory()){
-    console.log("file at " + entryPoint + " is a directory");
+    console.error("file at " + entryPoint + " is a directory");
     process.exit(1);
 }
 
