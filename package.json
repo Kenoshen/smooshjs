@@ -1,6 +1,6 @@
 {
   "name": "smooshjs",
-  "version": "0.2.0",
+  "version": "0.2.8",
   "description": "Compiles javascript modules using cjs and amd into a single file",
   "main": "index.js",
   "scripts": {
@@ -24,14 +24,15 @@
   },
   "homepage": "https://github.com/Kenoshen/smooshjs",
   "dependencies": {
-    "fs": "0.0.2"
+    "fs": "0.0.2",
+    "mkdirp": "^0.5.1",
+    "path": "^0.12.7"
   },
   "bin": {
     "smoosh": "index.js"
   },
   "preferGlobal": true,
   "devDependencies": {
-    "path": "^0.12.7",
     "shelljs": "^0.5.3"
   }
 }

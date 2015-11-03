@@ -1,11 +1,11 @@
 #! /usr/bin/env node
 
-module.exports = function() {
+module.exports = function(stringArgs) {
     var args;
-    if (process && process.argv) {
-        args = process.argv.splice(2);
+    if (stringArgs) {
+        args = stringArgs.split(" ");
     } else {
-        args = arguments;
+        args = process.argv.splice(2);
     }
 
     var fs = require("fs");
@@ -21,8 +21,13 @@ module.exports = function() {
     var output = undefined;
 
     for (var i = 0; i < args.length; i++) {
-        var arg = args[i];
-        if (arg === "--help" || arg === "-help") {
+        if (args[i] === null || args[i] === undefined){
+            continue;
+        }
+        var arg = args[i].trim();
+        if (arg === ""){
+            continue;
+        } else if (arg === "--help" || arg === "-help") {
             helpTag = true;
         } else if (arg === "--amd" || arg === "-amd") {
             amdTag = true;
@@ -38,14 +43,12 @@ module.exports = function() {
     }
 
     if (helpTag) {
-        var ret = {code:0, output: getSnippet("help.txt")};
-        console.log(ret.output);
-        return ret;
+        console.log(getSnippet("help.txt"));
+        return {code: 0, output: "help"};
     }
     if (!entryPoint) {
-        var ret = {code:1, output: getSnippet("help.txt")};
-        console.error(ret.output);
-        return ret;
+        console.error(getSnippet("help.txt"));
+        return {code: 1, output: "missing entry point: " + args};
     }
     if (entryPoint.indexOf(".js") < 0) {
         var ret = {code:1, output: "entry point must be a javascript file (end in .js)"};
@@ -94,7 +97,23 @@ module.exports = function() {
             console.log("the output file at " + outputDir + " is a directory, output will be set to " + output);
         }
     } catch (e) {
-        // do nothing because the file doesn't exist yet
+        // if the location doesn't exist, make sure that all the folders up to that location exist
+        var mkdirp = require("mkdirp");
+        var outputPath = path.parse(output);
+        var dirToMake = outputPath.dir;
+        if (! outputPath.ext){
+            dirToMake = output;
+
+            var outputDir = output + (output.substr(output.length - 1) === "/" ? "" : "/");
+            output = outputDir + entryPointPathParsed.base;
+            console.log("the output file at " + outputDir + " is a directory, output will be set to " + output);
+        }
+        var madeDir = mkdirp.sync(dirToMake);
+        if (!madeDir){
+            var ret = {code:1, output: "wasn't able to create the directory structure: " + dirToMake};
+            console.error(ret.output);
+            return ret;
+        }
     }
 
     if (amdTag && cjsTag) {
