@@ -1,152 +1,173 @@
 #! /usr/bin/env node
 
-var fs = require("fs");
-var path = require("path");
-
-function displayMessage(name){ console.log(fs.readFileSync(__dirname + "/snippets/" + name + ".txt", "utf8")); }
-
-var helpTag = false;
-var amdTag = false;
-var cjsTag = false;
-var testTag = false;
-var entryPoint = undefined;
-var output = undefined;
-
-for (var i = 2; i < process.argv.length; i++){
-    var arg = process.argv[i];
-    if (arg === "--help" || arg === "-help"){
-        helpTag = true;
-    } else if (arg === "--amd" || arg === "-amd"){
-        amdTag = true;
-    } else if (arg === "--cjs" || arg === "-cjs"){
-        cjsTag = true;
-    } else if (arg === "--test" || arg === "-test"){
-        testTag = true;
-    } else if (! entryPoint){
-        entryPoint = arg;
+module.exports = function() {
+    var args;
+    if (process && process.argv) {
+        args = process.argv.splice(2);
     } else {
-        output = arg;
-    }
-}
-
-if (helpTag){
-    displayMessage("help");
-    process.exit(0);
-}
-if (!entryPoint){
-    displayMessage("help");
-    process.exit(1);
-}
-if (entryPoint.indexOf(".js") < 0){
-    console.error("entry point must be a javascript file (end in .js)");
-    process.exit(1);
-}
-
-if (!amdTag && !cjsTag){
-    console.error("must provide at least one of the output tags (-amd  OR  -cjs)");
-    process.exit(1);
-}
-
-// TODO: check if entryPoint file exists
-var entryPointStat;
-try {
-    entryPointStat = fs.statSync(entryPoint);
-} catch (e){
-    console.error("file at " + entryPoint + " does not exist");
-    process.exit(1);
-}
-var entryPointPathParsed = path.parse(entryPoint);
-
-if (entryPointStat.isDirectory()){
-    console.error("file at " + entryPoint + " is a directory");
-    process.exit(1);
-}
-
-if (!output){
-    output = entryPointPathParsed.dir + "/" + entryPointPathParsed.name + ".smooshed.js";
-    console.log("output file will be set to: " + output);
-}
-
-var outputStat;
-try {
-    outputStat = fs.statSync(output);
-
-    if (outputStat.isFile()){
-        console.log("the output file at " + output + " already exists, will try to overwrite it");
+        args = arguments;
     }
 
-    if (outputStat.isDirectory()){
-        var outputDir = output + (output.substr(output.length - 1) === "/" ? "" : "/");
-        output = outputDir + entryPointPathParsed.base;
-        console.log("the output file at " + outputDir + " is a directory, output will be set to " + output);
-    }
-} catch (e){
-    // do nothing because the file doesn't exist yet
-}
+    var fs = require("fs");
+    var path = require("path");
 
-if (amdTag && cjsTag){
-    var noJs = output.split(".js")[0];
-    amdTag = noJs + ".amd.js";
-    cjsTag = noJs + ".cjs.js";
-    console.log("Both -amd and -cjs tags were provided, output will be sent to: " + amdTag + " and " + cjsTag);
-} else if (amdTag){
-    amdTag = output
-} else if (cjsTag){
-    cjsTag = output
-}
+    function getSnippet(name) { return fs.readFileSync(__dirname + "/snippets/" + name, "utf8"); }
 
-if (testTag){
-    console.log("test tag was found, exiting now");
-    process.exit(0);
-}
+    var helpTag = false;
+    var amdTag = false;
+    var cjsTag = false;
+    var testTag = false;
+    var entryPoint = undefined;
+    var output = undefined;
 
-var pie = {};
-function recurseForDependencies(fileLocation){
-    try {
-        var resolvedFileLocation = path.resolve(fileLocation);
-        if (pie.hasOwnProperty(resolvedFileLocation)) {
-            return;
+    for (var i = 0; i < args.length; i++) {
+        var arg = args[i];
+        if (arg === "--help" || arg === "-help") {
+            helpTag = true;
+        } else if (arg === "--amd" || arg === "-amd") {
+            amdTag = true;
+        } else if (arg === "--cjs" || arg === "-cjs") {
+            cjsTag = true;
+        } else if (arg === "--test" || arg === "-test") {
+            testTag = true;
+        } else if (!entryPoint) {
+            entryPoint = arg;
+        } else {
+            output = arg;
         }
-        //console.log("Find dependencies in " + resolvedFileLocation);
-        var piece = {
-            id: resolvedFileLocation,
-            src: fs.readFileSync(resolvedFileLocation, "utf8"),
-            info: path.parse(resolvedFileLocation),
-            dependencies: []
-        };
-        pie[resolvedFileLocation] = piece;
-
-        var requireRegex = /require\("(.*)"\)/g;
-        piece.src = piece.src.replace(requireRegex, function (p1, p2) {
-            var m = path.resolve(piece.info.dir + "/" + p2);
-            if (piece.dependencies.indexOf(m) < 0) piece.dependencies.push(m);
-            return "require(\"" + m + "\")";
-        });
-
-        piece.dependencies.forEach(function (dependency) {
-            recurseForDependencies(dependency);
-        });
-    }catch (e){
-        //console.log("Error during dependency search: " + e);
     }
-}
-recurseForDependencies(entryPoint);
 
-var cjsModuleTemplate = fs.readFileSync(__dirname + "/snippets/cjs.module.jstemplate", "utf8");
-var entryPointId = path.resolve(entryPoint);
-var sourceCompiled = "";
-for (var id in pie){
-    sourceCompiled += cjsModuleTemplate.replace("<%id>", id).replace("<%src>", pie[id].src);
-}
-if (cjsTag){
-    var cjsTemplate = fs.readFileSync(__dirname + "/snippets/cjs.jstemplate", "utf8");
-    fs.writeFileSync(cjsTag, cjsTemplate.replace("<%source>", sourceCompiled).replace("<%entryPoint>", entryPointId), "utf8");
-    console.log("Successfully wrote to file: " + cjsTag);
-}
-if (amdTag){
-    var amdTemplate = fs.readFileSync(__dirname + "/snippets/amd.jstemplate", "utf8");
-    fs.writeFileSync(amdTag, amdTemplate.replace("<%source>", sourceCompiled).replace("<%entryPoint>", entryPointId), "utf8");
-    console.log("Successfully wrote to file: " + amdTag);
-}
+    if (helpTag) {
+        var ret = {code:0, output: getSnippet("help.txt")};
+        console.log(ret.output);
+        return ret;
+    }
+    if (!entryPoint) {
+        var ret = {code:1, output: getSnippet("help.txt")};
+        console.error(ret.output);
+        return ret;
+    }
+    if (entryPoint.indexOf(".js") < 0) {
+        var ret = {code:1, output: "entry point must be a javascript file (end in .js)"};
+        console.error(ret.output);
+        return ret;
+    }
 
-process.exit(0);
+    if (!amdTag && !cjsTag) {
+        var ret = {code:1, output: "must provide at least one of the output tags (-amd  OR  -cjs)"};
+        console.error(ret.output);
+        return ret;
+    }
+
+    var entryPointStat;
+    try {
+        entryPointStat = fs.statSync(entryPoint);
+    } catch (e) {
+        var ret = {code:1, output: "file at " + entryPoint + " does not exist"};
+        console.error(ret.output);
+        return ret;
+    }
+    var entryPointPathParsed = path.parse(entryPoint);
+
+    if (entryPointStat.isDirectory()) {
+        var ret = {code:1, output: "file at " + entryPoint + " is a directory"};
+        console.error(ret.output);
+        return ret;
+    }
+
+    if (!output) {
+        output = entryPointPathParsed.dir + "/" + entryPointPathParsed.name + ".smooshed.js";
+        console.log("output file will be set to: " + output);
+    }
+
+    var outputStat;
+    try {
+        outputStat = fs.statSync(output);
+
+        if (outputStat.isFile()) {
+            console.log("the output file at " + output + " already exists, will try to overwrite it");
+        }
+
+        if (outputStat.isDirectory()) {
+            var outputDir = output + (output.substr(output.length - 1) === "/" ? "" : "/");
+            output = outputDir + entryPointPathParsed.base;
+            console.log("the output file at " + outputDir + " is a directory, output will be set to " + output);
+        }
+    } catch (e) {
+        // do nothing because the file doesn't exist yet
+    }
+
+    if (amdTag && cjsTag) {
+        var noJs = output.split(".js")[0];
+        amdTag = noJs + ".amd.js";
+        cjsTag = noJs + ".cjs.js";
+        console.log("Both -amd and -cjs tags were provided, output will be sent to: " + amdTag + " and " + cjsTag);
+    } else if (amdTag) {
+        amdTag = output
+    } else if (cjsTag) {
+        cjsTag = output
+    }
+
+    if (testTag) {
+        var ret = {code:0, output: "test tag was found, exiting now"};
+        console.log(ret.output);
+        return ret;
+    }
+
+    var pie = {};
+
+    function recurseForDependencies(fileLocation) {
+        try {
+            var resolvedFileLocation = path.resolve(fileLocation);
+            if (pie.hasOwnProperty(resolvedFileLocation)) {
+                return;
+            }
+            //console.log("Find dependencies in " + resolvedFileLocation);
+            var piece = {
+                id: resolvedFileLocation,
+                src: fs.readFileSync(resolvedFileLocation, "utf8"),
+                info: path.parse(resolvedFileLocation),
+                dependencies: []
+            };
+            pie[resolvedFileLocation] = piece;
+
+            var requireRegex = /require\("(.*)"\)/g;
+            piece.src = piece.src.replace(requireRegex, function (p1, p2) {
+                var m = path.resolve(piece.info.dir + "/" + p2);
+                if (piece.dependencies.indexOf(m) < 0) piece.dependencies.push(m);
+                return "require(\"" + m + "\")";
+            });
+
+            piece.dependencies.forEach(function (dependency) {
+                recurseForDependencies(dependency);
+            });
+        } catch (e) {
+            //console.log("Error during dependency search: " + e);
+        }
+    }
+
+    recurseForDependencies(entryPoint);
+
+    var cjsModuleTemplate = getSnippet("cjs.module.jstemplate");
+    var entryPointId = path.resolve(entryPoint);
+    var sourceCompiled = "";
+    for (var id in pie) {
+        sourceCompiled += cjsModuleTemplate.replace("<%id>", id).replace("<%src>", pie[id].src);
+    }
+    if (cjsTag) {
+        var cjsTemplate = getSnippet("cjs.jstemplate");
+        fs.writeFileSync(cjsTag, cjsTemplate.replace("<%source>", sourceCompiled).replace("<%entryPoint>", entryPointId), "utf8");
+        console.log("Successfully wrote to file: " + cjsTag);
+    }
+    if (amdTag) {
+        var amdTemplate = getSnippet("amd.jstemplate");
+        fs.writeFileSync(amdTag, amdTemplate.replace("<%source>", sourceCompiled).replace("<%entryPoint>", entryPointId), "utf8");
+        console.log("Successfully wrote to file: " + amdTag);
+    }
+
+    return {code: 0, output: "Successfully wrote to: " + (cjsTag ? cjsTag : "") + " " + (amdTag ? amdTag : "")};
+};
+if (!module.parent) {
+    var result = module.exports()
+    process.exit(result.code);
+}

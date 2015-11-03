@@ -1,11 +1,12 @@
+var smoosh = require("../index.js");
 var shell = require("shelljs");
 var chai = require("chai");
 
-describe("CJS", function(){
-   it("should parse through the cjs-based file and find all the correct dependencies", function(){
+describe("Require", function(){
+   it("should be able to be used within a node run environment, not just as a shell script", function(){
        shell.exec("rm -r test/output/*");
-       var output = shell.exec("node index.js -cjs test/resources/cjs.entrypoint.js test/output/");
-       chai.expect(output.code).to.equal(0);
+
+       smoosh("-cjs", "test/resources/cjs.entrypoint.js", "test/output/");
 
        var product = require("./output/cjs.entrypoint.js");
        //var product = require("./output/test.js");
