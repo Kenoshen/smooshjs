@@ -16,5 +16,5 @@ describe("CJS", function(){
        chai.expect(product.dep1.sub(1, 2)).to.equal(-1);
        chai.expect(product.dep2.sub(2, 2)).to.equal(0);
        chai.expect(product.dep2.add).to.equal(undefined);
-   })
+   });
 });

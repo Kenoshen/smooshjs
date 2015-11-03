@@ -2,7 +2,7 @@ var smoosh = require("../index.js");
 var shell = require("shelljs");
 var chai = require("chai");
 
-describe.only("Require", function () {
+describe("Require", function () {
     it("should be able to be used within a node run environment, not just as a shell script", function () {
         shell.exec("rm -r test/output/*");
 

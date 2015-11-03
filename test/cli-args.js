@@ -30,6 +30,7 @@ describe("CLI", function(){
 
         it("should default to *.smooshed.js when no output file is given", function(){
             var ret = shell.exec("node index.js -amd -test test/resources/entryPointThatExists.js");
+            console.log(JSON.stringify(ret));
             chai.expect(ret.code).to.equal(0);
             chai.expect(ret.output).to.contain(".smooshed.js");
         });
@@ -63,6 +64,12 @@ describe("CLI", function(){
             var ret = shell.exec("node index.js -amd -test test/resources/entryPointThatExists.js test/resources/directory.js");
             chai.expect(ret.code).to.equal(0);
             chai.expect(ret.output).to.contain("is a directory, output will be set to");
+        });
+
+        it("should be completely silent when the silent tag is present", function(){
+            var ret = shell.exec("node index.js -amd -test -silent test/resources/entryPointThatExists.js test/resources/directory.js");
+            chai.expect(ret.code).to.equal(0);
+            chai.expect(ret.output).to.equal("");
         });
     });
 });
