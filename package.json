@@ -1,6 +1,6 @@
 {
   "name": "smooshjs",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "Compiles javascript modules using cjs and amd into a single file",
   "main": "index.js",
   "scripts": {

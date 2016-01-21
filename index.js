@@ -143,6 +143,17 @@ module.exports = function(stringArgs) {
 
     var pie = {};
 
+    function stringHash(str) {
+        var hash = 0, i, chr, len;
+        if (str.length === 0) return hash;
+        for (i = 0, len = str.length; i < len; i++) {
+            chr   = str.charCodeAt(i);
+            hash  = ((hash << 5) - hash) + chr;
+            hash |= 0; // Convert to 32bit integer
+        }
+        return "" + Math.abs(hash);
+    }
+
     function recurseForDependencies(fileLocation) {
         try {
             var resolvedFileLocation = path.resolve(fileLocation);
@@ -151,18 +162,18 @@ module.exports = function(stringArgs) {
             }
             //if (!silentTag) console.log("Find dependencies in " + resolvedFileLocation);
             var piece = {
-                id: resolvedFileLocation,
+                id: stringHash(resolvedFileLocation),
                 src: fs.readFileSync(resolvedFileLocation, "utf8"),
                 info: path.parse(resolvedFileLocation),
                 dependencies: []
             };
-            pie[resolvedFileLocation] = piece;
+            pie[piece.id] = piece;
 
             var requireRegex = /require\("(.*)"\)/g;
             piece.src = piece.src.replace(requireRegex, function (p1, p2) {
                 var m = path.resolve(piece.info.dir + "/" + p2);
                 if (piece.dependencies.indexOf(m) < 0) piece.dependencies.push(m);
-                return "require(\"" + m + "\")";
+                return "require(\"" + stringHash(m) + "\")";
             });
 
             piece.dependencies.forEach(function (dependency) {
@@ -176,7 +187,7 @@ module.exports = function(stringArgs) {
     recurseForDependencies(entryPoint);
 
     var cjsModuleTemplate = getSnippet("cjs.module.jstemplate");
-    var entryPointId = path.resolve(entryPoint);
+    var entryPointId = stringHash(path.resolve(entryPoint));
     var sourceCompiled = "";
     for (var id in pie) {
         sourceCompiled += cjsModuleTemplate.replace("<%id>", id).replace("<%src>", pie[id].src);
